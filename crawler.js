@@ -34,4 +34,23 @@ function getUrlFromHtml(htmlBody, baseUrl) {
     return links
 }
 
-module.exports = { normalizeUrl, getUrlFromHtml }
+async function crawlPage(url) {
+    try {
+        const resp = await fetch(url)
+        const contentType = resp.headers.get('content-type')
+        if (resp.status > 399) {
+            console.log(`Facing some issues with ${url}. Exited with status ${resp.status}`)
+            return
+        }
+        if (!contentType.includes('text/html')) {
+            console.log(`Facing some issues with ${url}. Found ${contentType} instead of text/html`)
+            return
+        }
+        console.log(`Actively Crawling ${url}`)
+        console.log(await resp.text())
+    } catch (err) {
+        console.log(`Please Provide a valid url. Example: https://whispernrt.github.io . ${err.message}`)
+    }
+}
+
+module.exports = { normalizeUrl, getUrlFromHtml, crawlPage }
