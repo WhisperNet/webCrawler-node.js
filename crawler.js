@@ -34,20 +34,42 @@ function getUrlFromHtml(htmlBody, baseUrl) {
     return links
 }
 
-async function crawlPage(url) {
+async function crawlPage(baseUrl, curUrl, pages) {
+
+    const baseUrlObj = new URL(baseUrl)
+    const curUrlObj = new URL(curUrl)
+    if (baseUrlObj.hostname !== curUrlObj.hostname) {
+        return pages
+    }
+
+    const normalizeCurUrl = normalizeUrl(curUrl)
+    if (pages[normalizeCurUrl] > 0) {
+        pages[normalizeCurUrl]++
+        return pages
+    }
+
+    pages[normalizeCurUrl] = 1
+
+    console.log(`Actively Crawling ${curUrl}`)
     try {
-        const resp = await fetch(url)
+        const resp = await fetch(curUrl)
         const contentType = resp.headers.get('content-type')
         if (resp.status > 399) {
-            console.log(`Facing some issues with ${url}. Exited with status ${resp.status}`)
-            return
+            console.log(`Facing some issues with ${curUrl}. Exited with status ${resp.status}`)
+            return pages
         }
         if (!contentType.includes('text/html')) {
-            console.log(`Facing some issues with ${url}. Found ${contentType} instead of text/html`)
-            return
+            console.log(`Facing some issues with ${curUrl}. Found ${contentType} instead of text/html`)
+            return pages
         }
-        console.log(`Actively Crawling ${url}`)
-        console.log(await resp.text())
+
+        const htmlBody = await resp.text()
+        const nextUrls = getUrlFromHtml(htmlBody, baseUrl)
+        for (const nextUrl of nextUrls) {
+            await crawlPage(baseUrl, nextUrl, pages)
+        }
+
+        return pages
     } catch (err) {
         console.log(`Please Provide a valid url. Example: https://whispernrt.github.io . ${err.message}`)
     }
